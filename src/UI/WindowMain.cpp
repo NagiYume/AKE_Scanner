@@ -166,8 +166,7 @@ WindowMain::WindowMain(QWidget* parent) :
         // 确保UI状态恢复
         ui.pBtStream->setEnabled(true);
         ui.pBtStream->setText("监视直播间");
-        ui.pBtstartScreen->setEnabled(true);
-    }, Qt::QueuedConnection);
+        ui.pBtstartScreen->setEnabled(true); }, Qt::QueuedConnection);
     connect(this, &WindowMain::AccountNotSelected, this, [&]() {
         QMessageBox::information(this, "提示", "没有选择任何账号", QMessageBox::Yes);
         pBtStop();
@@ -186,8 +185,7 @@ WindowMain::WindowMain(QWidget* parent) :
         // 恢复UI状态
         ui.pBtStream->setEnabled(true);
         ui.pBtStream->setText("监视直播间");
-        ui.pBtstartScreen->setEnabled(true);
-    }, Qt::QueuedConnection);
+        ui.pBtstartScreen->setEnabled(true); }, Qt::QueuedConnection);
     connect(&configinitload, &configInitLoad::userinfoTrue, this, &WindowMain::configInitUpdate);
     connect(ui.tableWidget, &QTableWidget::itemChanged, this, &WindowMain::updateNote);
 
@@ -361,6 +359,13 @@ void WindowMain::pBtstartScreen(bool clicked)
             t1.setServerType(ServerType::BH3_BiliBili);
             t1.setLoginInfo(uid, stoken, result.uname);
         }
+        else if (type == "终末地")
+        {
+            std::string stoken = userinfo["account"][countA]["access_key"];
+            std::string uid = userinfo["account"][countA]["uid"];
+            t1.setServerType(ServerType::Endfield);
+            t1.setLoginInfo(uid, stoken);
+        }
         t1.start();
         emit StartScanScreen();
     });
@@ -423,6 +428,13 @@ void WindowMain::pBtStream(bool clicked)
             }
             t2.setServerType(ServerType::BH3_BiliBili);
             t2.setLoginInfo(uid, stoken, result.uname);
+        }
+        else if (type == "终末地")
+        {
+            std::string stoken = userinfo["account"][countA]["access_key"];
+            std::string uid = userinfo["account"][countA]["uid"];
+            t2.setServerType(ServerType::Endfield);
+            t2.setLoginInfo(uid, stoken);
         }
         t2.start();
         emit StartScanLive();

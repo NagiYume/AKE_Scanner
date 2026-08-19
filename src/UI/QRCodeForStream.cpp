@@ -111,9 +111,8 @@ void QRCodeForStream::LoginOfficial()
         // ffmpeg 内部超时；本看门狗主要覆盖「有连接但持续无视频帧」的场景。
         if (std::chrono::steady_clock::now() - lastFrameTime > kStreamStallTimeout)
         {
-            std::string error_msg = "直播流已中断或无画面数据（超过 "
-                + std::to_string(kStreamStallTimeout.count()) + " 秒未收到视频帧）。"
-                "请检查直播是否仍在进行、网络是否稳定。";
+            std::string error_msg = "直播流已中断或无画面数据（超过 " + std::to_string(kStreamStallTimeout.count()) + " 秒未收到视频帧）。"
+                                                                                                                      "请检查直播是否仍在进行、网络是否稳定。";
             std::cerr << "[FFmpeg] " << error_msg << std::endl;
             emit streamError(QString::fromStdString(error_msg));
             ret = ScanRet::LIVESTOP;
@@ -253,9 +252,8 @@ void QRCodeForStream::LoginBH3BiliBili()
         // ── 卡死看门狗 ──
         if (std::chrono::steady_clock::now() - lastFrameTime > kStreamStallTimeout)
         {
-            std::string error_msg = "直播流已中断或无画面数据（超过 "
-                + std::to_string(kStreamStallTimeout.count()) + " 秒未收到视频帧）。"
-                "请检查直播是否仍在进行、网络是否稳定。";
+            std::string error_msg = "直播流已中断或无画面数据（超过 " + std::to_string(kStreamStallTimeout.count()) + " 秒未收到视频帧）。"
+                                                                                                                      "请检查直播是否仍在进行、网络是否稳定。";
             std::cerr << "[FFmpeg] " << error_msg << std::endl;
             emit streamError(QString::fromStdString(error_msg));
             ret = ScanRet::LIVESTOP;
@@ -310,6 +308,32 @@ void QRCodeForStream::LoginBH3BiliBili()
                 thread_local QRScanner qrScanners;
                 std::string str;
                 qrScanners.decodeSingle(*latestFrame, str);
+                if (servertype == ServerType::Endfield)
+                {
+                    auto scanId = ParseEndfieldScanId(str);
+                    if (!scanId.has_value() || lastTicket == *scanId)
+                    {
+                        return;
+                    }
+                    if (mtx.try_lock())
+                    {
+                        bool expired = false;
+                        const bool scanned = EndfieldScanLogin(gameToken, *scanId, expired);
+                        if (scanned && EndfieldUpdateScanStatus(gameToken, *scanId))
+                        {
+                            lastTicket = *scanId;
+                            Q_EMIT loginResults(ScanRet::SUCCESS);
+                            stop();
+                        }
+                        else if (!expired)
+                        {
+                            Q_EMIT loginResults(ScanRet::FAILURE_1);
+                            stop();
+                        }
+                        mtx.unlock();
+                    }
+                    return;
+                }
                 if (str.size() < 85)
                 {
                     return;
@@ -490,7 +514,7 @@ auto QRCodeForStream::init() -> bool
     }
     pAVPacket = av_packet_alloc();
     pAVFrame = av_frame_alloc();
-    std::cerr << "[FFmpeg] 直播流初始化成功，分辨率: " 
+    std::cerr << "[FFmpeg] 直播流初始化成功，分辨率: "
               << videoStreamWidth << "x" << videoStreamHeight << std::endl;
     return true;
 }

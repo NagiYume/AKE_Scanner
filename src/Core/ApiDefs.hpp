@@ -8,7 +8,8 @@ enum class ServerType : uint8_t
 {
     UNKNOW [[deprecated]] = 0,
     Official = 1,
-    BH3_BiliBili = 2
+    BH3_BiliBili = 2,
+    Endfield = 3
 };
 
 enum class GameType
@@ -128,6 +129,14 @@ constexpr auto userinfo = base + compile_string{ "/user/api/getUserFullInfo" };
 
 namespace api::game
 {
+
+namespace endfield
+{
+constexpr compile_string base{ "https://as.hypergryph.com" };
+constexpr auto login_by_phone_password = base + compile_string{ "/user/auth/v1/token_by_phone_password" };
+constexpr auto scan_login = base + compile_string{ "/user/info/v1/scan_login" };
+constexpr auto update_scan_status = base + compile_string{ "/user/info/v1/update_scan_status" };
+}
 
 namespace bili
 {

@@ -20,6 +20,86 @@
 static const std::string device_id{ CreateUUID::CreateUUID4() };
 static GameType loginType{ GameType::TearsOfThemis };
 
+struct EndfieldLoginResult
+{
+    int status{};
+    std::string message{};
+    std::string token{};
+};
+
+inline EndfieldLoginResult LoginEndfieldByPhonePassword(const std::string_view phone, const std::string_view password)
+{
+    const auto response = cpr::Post(
+        cpr::Url{ api::game::endfield::login_by_phone_password },
+        cpr::Body{ nlohmann::json{
+            { "phone", phone },
+            { "password", password },
+            { "from", 1 } }
+                       .dump() },
+        cpr::Header{ { "Content-Type", "application/json" } });
+
+    EndfieldLoginResult result{};
+    try
+    {
+        const auto json = nlohmann::json::parse(response.text);
+        result.status = json.value("status", -1);
+        result.message = json.value("msg", "终末地登录失败");
+        if (result.status == 0)
+        {
+            result.token = json.at("data").at("token").get<std::string>();
+        }
+    }
+    catch (const std::exception&)
+    {
+        result.status = -1;
+        result.message = "终末地登录响应格式错误";
+    }
+    return result;
+}
+
+inline bool EndfieldScanLogin(const std::string_view token, const std::string_view scanId, bool& expired)
+{
+    const auto response = cpr::Post(
+        cpr::Url{ api::game::endfield::scan_login },
+        cpr::Body{ nlohmann::json{
+            { "appCode", "dd7b852d5f1dd9da" },
+            { "token", token },
+            { "scanId", scanId } }
+                       .dump() },
+        cpr::Header{ { "Content-Type", "application/json" } });
+
+    try
+    {
+        const auto json = nlohmann::json::parse(response.text);
+        expired = json.value("status", -1) == 100;
+        return json.value("status", -1) == 0;
+    }
+    catch (const std::exception&)
+    {
+        expired = false;
+        return false;
+    }
+}
+
+inline bool EndfieldUpdateScanStatus(const std::string_view token, const std::string_view scanId)
+{
+    const auto response = cpr::Post(
+        cpr::Url{ api::game::endfield::update_scan_status },
+        cpr::Body{ nlohmann::json{
+            { "token", token },
+            { "scanId", scanId } }
+                       .dump() },
+        cpr::Header{ { "Content-Type", "application/json" } });
+    try
+    {
+        return nlohmann::json::parse(response.text).value("status", -1) == 0;
+    }
+    catch (const std::exception&)
+    {
+        return false;
+    }
+}
+
 [[nodiscard]] inline std::string DataSignAlgorithmVersionGen1()
 {
     return "";
