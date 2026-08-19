@@ -17,6 +17,7 @@
 #include <QRegularExpression>
 #include <QRegularExpressionValidator>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QTimer>
@@ -25,6 +26,7 @@
 
 #include "WindowGeeTest.h"
 #include "ApiDefs.hpp"
+#include "MhyApi.hpp"
 
 class WindowLogin : public QWidget
 {
@@ -50,7 +52,7 @@ protected:
 private:
     WindowGeeTest m_WindowGeeTest{ this };
     std::array<QWidget*, 4> tabs{};
-    static constexpr std::array<const std::string_view, 4> tabsName{ "短信登录", "扫码登录", "Cookie登录", "Bilibili崩坏3登录" };
+    static constexpr std::array<const std::string_view, 4> tabsName{ "短信登录", "扫码登录", "Cookie登录", "崩坏3/终末地登录" };
     QTabWidget* tabWidget{};
     QHBoxLayout* MainHLayout{};
 
@@ -90,6 +92,7 @@ private:
     void InitTabs3();
     QVBoxLayout* Tab3MainVLayout{};
     QVBoxLayout* Tab3VLayout0{};
+    QComboBox* gameSelect{};
     QLineEdit* lineEditAccount{};
     QLineEdit* lineEditPwd{};
     QVBoxLayout* Tab3VLayout1{};
@@ -101,6 +104,7 @@ private:
     void Initconnect();
 
     void ResultByLoginBH3BiLiBiLi(const auto& result);
+    void ResultByLoginEndfield(const EndfieldLoginResult& result);
     void ResultByLoginOfficial(const auto& result);
     void StartQRCodeLogin();
     void CheckQRCodeLoginState();

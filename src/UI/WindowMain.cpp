@@ -235,6 +235,12 @@ void WindowMain::pBtstartScreen(bool clicked)
             t1.setServerType(ServerType::BH3_BiliBili);
             t1.setLoginInfo(uid, stoken, result.uname);
         }
+        else if (type == "终末地")
+        {
+            t1.setServerType(ServerType::Endfield);
+            t1.setLoginInfo(userinfo["account"][countA]["uid"].get<std::string>(),
+                            userinfo["account"][countA]["access_key"].get<std::string>());
+        }
         t1.start();
         emit StartScanScreen();
     });
@@ -297,6 +303,12 @@ void WindowMain::pBtStream(bool clicked)
             }
             t2.setServerType(ServerType::BH3_BiliBili);
             t2.setLoginInfo(uid, stoken, result.uname);
+        }
+        else if (type == "终末地")
+        {
+            t2.setServerType(ServerType::Endfield);
+            t2.setLoginInfo(userinfo["account"][countA]["uid"].get<std::string>(),
+                            userinfo["account"][countA]["access_key"].get<std::string>());
         }
         t2.start();
         emit StartScanLive();

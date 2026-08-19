@@ -126,6 +126,32 @@ void QRCodeForStream::LoginOfficial()
                     thread_local QRScanner qrScanners;
                     std::string str;
                     qrScanners.decodeSingle(*frame, str);
+                    if (servertype == ServerType::Endfield)
+                    {
+                        auto scanId = ParseEndfieldScanId(str);
+                        if (!scanId.has_value() || lastTicket == *scanId)
+                        {
+                            return;
+                        }
+                        if (mtx.try_lock())
+                        {
+                            bool expired = false;
+                            const bool scanned = EndfieldScanLogin(stoken, *scanId, expired);
+                            if (scanned && EndfieldUpdateScanStatus(stoken, *scanId))
+                            {
+                                lastTicket = *scanId;
+                                Q_EMIT loginResults(ScanRet::SUCCESS);
+                                stop();
+                            }
+                            else if (!expired)
+                            {
+                                Q_EMIT loginResults(ScanRet::FAILURE_1);
+                                stop();
+                            }
+                            mtx.unlock();
+                        }
+                        return;
+                    }
                     if (str.size() < 85)
                     {
                         return;
@@ -418,6 +444,9 @@ void QRCodeForStream::run()
             break;
         case BH3_BiliBili:
             LoginBH3BiliBili();
+            break;
+        case Endfield:
+            LoginOfficial();
             break;
         default:
             break;

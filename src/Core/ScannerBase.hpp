@@ -2,12 +2,23 @@
 
 #include <string>
 #include <string_view>
+#include <optional>
 
 #include "ApiDefs.hpp"
 
 class ScannerBase
 {
 public:
+    static std::optional<std::string> ParseEndfieldScanId(const std::string_view qrText)
+    {
+        constexpr std::string_view prefix{ "hypergryph://scan_login?scanId=" };
+        if (!qrText.starts_with(prefix) || qrText.size() == prefix.size())
+        {
+            return std::nullopt;
+        }
+        return std::string{ qrText.substr(prefix.size()) };
+    }
+
     GameType gameType;
     std::string_view scanUrl{};
     std::string_view confirmUrl{};

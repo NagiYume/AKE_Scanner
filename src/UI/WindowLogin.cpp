@@ -201,6 +201,11 @@ void WindowLogin::InitTabs3()
     Tab3VLayout0 = new QVBoxLayout();
     Tab3VLayout0->setSpacing(40);
     Tab3VLayout0->setContentsMargins(50, 20, 50, -1);
+    gameSelect = new QComboBox(tabs[3]);
+    gameSelect->addItem("崩坏3 B服");
+    gameSelect->addItem("明日方舟：终末地");
+    gameSelect->setMaximumSize(QSize(400, 40));
+    Tab3VLayout0->addWidget(gameSelect);
     lineEditAccount = new QLineEdit(tabs[3]);
     lineEditAccount->setMaximumSize(QSize(400, 40));
     lineEditAccount->setPlaceholderText("请输入账号...");
@@ -397,8 +402,16 @@ void WindowLogin::Initconnect()
 
     connect(Tab3pBtConfirm, &QPushButton::clicked, this, [this] {
         QThreadPool::globalInstance()->start([this] {
-            auto result{ BSGameSDK::BH3::LoginByPassWord(lineEditAccount->text().toStdString(), lineEditPwd->text().toStdString()) };
-            ResultByLoginBH3BiLiBiLi(result);
+            if (gameSelect->currentIndex() == 1)
+            {
+                auto result{ LoginEndfieldByPhonePassword(lineEditAccount->text().toStdString(), lineEditPwd->text().toStdString()) };
+                ResultByLoginEndfield(result);
+            }
+            else
+            {
+                auto result{ BSGameSDK::BH3::LoginByPassWord(lineEditAccount->text().toStdString(), lineEditPwd->text().toStdString()) };
+                ResultByLoginBH3BiLiBiLi(result);
+            }
         });
     });
 
@@ -578,5 +591,17 @@ void WindowLogin::CheckQRCodeLoginState()
     break;
     default:
         __assume(0);
+    }
+}
+
+void WindowLogin::ResultByLoginEndfield(const EndfieldLoginResult& result)
+{
+    if (result.status == 0)
+    {
+        emit AddUserInfo("明日方舟：终末地", result.token, lineEditAccount->text().toStdString(), "", "终末地");
+    }
+    else
+    {
+        emit showMessagebox(QString::fromStdString(result.message));
     }
 }
