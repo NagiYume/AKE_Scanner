@@ -88,7 +88,7 @@ void QRCodeForStream::LoginOfficial()
             ret = ScanRet::LIVESTOP;
             break;
         }
-        lastFrameTime = std::chrono::steady_clock::now();  // 成功读到包，刷新看门狗
+        lastFrameTime = std::chrono::steady_clock::now(); // 成功读到包，刷新看门狗
         if (pAVPacket->stream_index != videoStreamIndex)
         {
             continue;
@@ -222,7 +222,7 @@ void QRCodeForStream::LoginBH3BiliBili()
             ret = ScanRet::LIVESTOP;
             break;
         }
-        lastFrameTime = std::chrono::steady_clock::now();  // 成功读到包，刷新看门狗
+        lastFrameTime = std::chrono::steady_clock::now(); // 成功读到包，刷新看门狗
         if (pAVPacket->stream_index != videoStreamIndex)
         {
             continue;
