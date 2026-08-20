@@ -513,10 +513,22 @@ bool WindowMain::checkDuplicates(const std::string uid)
 
 bool WindowMain::GetStreamLink(const std::string& roomid, std::string& url, std::map<std::string, std::string>& heards)
 {
-    auto info = GetLiveInfo(static_cast<LivePlatform>(ui.comboBox->currentIndex()), roomid);
+    const auto platform = static_cast<LivePlatform>(ui.comboBox->currentIndex());
+    auto info = GetLiveInfo(platform, roomid);
     if (info.status == LiveStreamStatus::Normal)
     {
         url = info.link;
+        if (platform == LivePlatform::BiliBili)
+        {
+            // Bilibili's CDN rejects FFmpeg's default Lavf user agent and
+            // requires a live.bilibili.com referer for direct stream access.
+            heards = {
+                { "user_agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                "Chrome/139.0.0.0 Safari/537.36" },
+                { "referer", "https://live.bilibili.com/" },
+            };
+        }
         return true;
     }
     else

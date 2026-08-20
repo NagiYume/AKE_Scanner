@@ -32,7 +32,7 @@ QRCodeForStream::QRCodeForStream(QObject* parent) :
     servertype(ServerType::Official)
 
 {
-    av_log_set_level(AV_LOG_FATAL);
+    av_log_set_level(AV_LOG_ERROR);
     m_config = &(ConfigDate::getInstance());
 }
 
@@ -348,14 +348,20 @@ void QRCodeForStream::setUrl(const std::string& url, const std::map<std::string,
 auto QRCodeForStream::init() -> bool
 {
     pAVFormatContext = avformat_alloc_context();
-    if (avformat_open_input(&pAVFormatContext, streamUrl.c_str(), NULL, &pAvdictionary) != 0)
+    const int openResult = avformat_open_input(&pAVFormatContext, streamUrl.c_str(), NULL, &pAvdictionary);
+    if (openResult < 0)
     {
-        std::cerr << "Error opening input file" << std::endl;
+        char errorMessage[AV_ERROR_MAX_STRING_SIZE]{};
+        av_strerror(openResult, errorMessage, sizeof(errorMessage));
+        std::cerr << "Error opening input stream: " << errorMessage << std::endl;
         return false;
     }
-    if (avformat_find_stream_info(pAVFormatContext, NULL) < 0)
+    const int streamInfoResult = avformat_find_stream_info(pAVFormatContext, NULL);
+    if (streamInfoResult < 0)
     {
-        std::cerr << "Error finding stream information" << std::endl;
+        char errorMessage[AV_ERROR_MAX_STRING_SIZE]{};
+        av_strerror(streamInfoResult, errorMessage, sizeof(errorMessage));
+        std::cerr << "Error finding stream information: " << errorMessage << std::endl;
         return false;
     }
     AVStream* videoStream = nullptr;
@@ -452,7 +458,11 @@ void QRCodeForStream::run()
             break;
         }
     }
-    if (ret == ScanRet::LIVESTOP)
+    else
+    {
+        ret = ScanRet::STREAMERROR;
+    }
+    if (ret == ScanRet::LIVESTOP || ret == ScanRet::STREAMERROR)
     {
         emit loginResults(ret);
     }
