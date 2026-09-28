@@ -8,15 +8,16 @@
 #include "QRScanner.h"
 #include "MhyApi.hpp"
 
-// 直播流扫码的提交节奏（毫秒）。
+// 直播流扫码的提交节奏（毫秒）。超级模式缩短到 50ms，普通模式保持 200ms。
 // 直播流帧率高（30~60fps），若对每一帧都调用 threadPool.tryStart 提交 QR 解码，
 // 2~3 个线程的线程池会被慢速 WeChatQRCode DNN 解码占满，tryStart 在无空闲线程时
 // 静默返回 false 丢帧（含二维码帧），表现为「大概率无反应、偶尔能扫上」。
 // 这里用「最新帧」机制 + 固定节奏解决：解码循环对每一帧都执行 sws_scale，但只在
 // 节奏窗口打开时把【当前最新一帧】提交给线程池；窗口关闭期间的帧只从解码器排空、
 // 并把最新一帧缓存下来，绝不直接丢弃。这样既保证二维码帧一定会被扫到，
-// 又不会因提交过密压垮线程池。节奏与屏幕扫码路径保持一致（200ms）。
-static constexpr auto kStreamSubmitInterval = std::chrono::milliseconds(200);
+// 又不会因提交过密压垮线程池。
+static constexpr auto kNormalStreamSubmitInterval = std::chrono::milliseconds(200);
+static constexpr auto kSuperStreamSubmitInterval = std::chrono::milliseconds(50);
 // 流卡死看门狗：超过此时长未读到任何一帧，判定直播流已中断并给出反馈。
 static constexpr auto kStreamStallTimeout = std::chrono::seconds(10);
 
@@ -69,6 +70,11 @@ void QRCodeForStream::setServerType(const ServerType servertype)
     this->servertype = servertype;
 }
 
+void QRCodeForStream::setSuperMode(const bool enabled)
+{
+    streamSubmitInterval = enabled ? kSuperStreamSubmitInterval : kNormalStreamSubmitInterval;
+}
+
 void QRCodeForStream::LoginOfficial()
 {
     // 看门狗基准：记录起始时刻，循环中每成功读到一帧就刷新 lastFrameTime。
@@ -112,12 +118,12 @@ void QRCodeForStream::LoginOfficial()
             cv::waitKey(1);
 #endif
             // ── 最新帧 + 节奏限流：根治「逐帧 tryStart 静默丢帧 → 大概率无反应」──
-            // 每解出一帧都刷新 latestFrame（绝不丢弃）；仅在距上次提交 >= kStreamSubmitInterval
+            // 每解出一帧都刷新 latestFrame（绝不丢弃）；仅在达到当前模式的提交间隔时
             // 且线程池有空位时，把【当前最新一帧】提交解码。这样二维码帧一定会被扫到，
             // 又不会因提交过密压垮线程池。
             latestFrame = std::make_shared<cv::Mat>(std::move(img));
             auto t = std::chrono::steady_clock::now();
-            if (t - lastSubmitTime >= kStreamSubmitInterval &&
+            if (t - lastSubmitTime >= streamSubmitInterval &&
                 threadPool.activeThreadCount() < threadNumber)
             {
                 lastSubmitTime = t;
@@ -247,12 +253,12 @@ void QRCodeForStream::LoginBH3BiliBili()
             cv::waitKey(1);
 #endif
             // ── 最新帧 + 节奏限流：根治「逐帧 tryStart 静默丢帧 → 大概率无反应」──
-            // 每解出一帧都刷新 latestFrame（绝不丢弃）；仅在距上次提交 >= kStreamSubmitInterval
+            // 每解出一帧都刷新 latestFrame（绝不丢弃）；仅在达到当前模式的提交间隔时
             // 且线程池有空位时，把【当前最新一帧】提交解码。这样二维码帧一定会被扫到，
             // 又不会因提交过密压垮线程池。
             latestFrame = std::make_shared<cv::Mat>(std::move(img));
             auto t = std::chrono::steady_clock::now();
-            if (t - lastSubmitTime >= kStreamSubmitInterval &&
+            if (t - lastSubmitTime >= streamSubmitInterval &&
                 threadPool.activeThreadCount() < threadNumber)
             {
                 lastSubmitTime = t;
@@ -435,6 +441,8 @@ void QRCodeForStream::run()
     threadPool.setMaxThreadCount(threadNumber);
     m_stop.store(true);
     ret = ScanRet::UNKNOW;
+    latestFrame.reset();
+    lastSubmitTime = {};
     //TODO 获取直播流地址放在这里
     if (init())
     {

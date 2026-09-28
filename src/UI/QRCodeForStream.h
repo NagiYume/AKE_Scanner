@@ -42,6 +42,7 @@ public:
     void setLoginInfo(const std::string_view uid, const std::string_view stoken, const std::string& name);
     void setMid(const std::string& mid);
     void setServerType(const ServerType servertype);
+    void setSuperMode(bool enabled);
     void setUrl(const std::string& url, const std::map<std::string, std::string> heard = {});
     auto init() -> bool;
     void run();
@@ -74,6 +75,7 @@ private:
     const int threadNumber{ 3 };   // 解码线程池并发数（原 2，提升吞吐并降低丢帧率）
     QThreadPool threadPool;         // QR 解码线程池
     // ── 直播流可靠性增强（根治「逐帧 tryStart 丢帧 → 大概率无反应」）──
+    std::chrono::milliseconds streamSubmitInterval{ 200 };   // 普通模式 200ms，超级模式 50ms
     std::shared_ptr<cv::Mat> latestFrame{ nullptr };          // 最新帧缓存，绝不丢弃
     std::chrono::steady_clock::time_point lastSubmitTime{};  // 上次提交解码的时刻（节奏限流）
     std::chrono::steady_clock::time_point lastFrameTime{};   // 上次读到帧的时刻（看门狗）

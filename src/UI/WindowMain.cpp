@@ -43,7 +43,7 @@ WindowMain::WindowMain(QWidget* parent) :
         pBtStop();
     });
     connect(this, &WindowMain::StartScanLive, this, [&]() {
-        ui.pBtStream->setText("监视直播中");
+        ui.pBtStream->setText(ui.checkBoxSuperMode->isChecked() ? "超级模式监视中" : "监视直播中");
         ui.pBtStream->setEnabled(true);
     });
     connect(this, &WindowMain::LiveStreamLinkError, this, [&](LiveStreamStatus status) {
@@ -250,10 +250,12 @@ void WindowMain::pBtStream(bool clicked)
 {
     ui.pBtstartScreen->setEnabled(false);
     ui.pBtStream->setEnabled(false);
+    ui.checkBoxSuperMode->setEnabled(false);
     ui.pBtStream->setText("加载中。。。");
     QApplication::processEvents();
 
-    QThreadPool::globalInstance()->start([&, clicked]() {
+    const bool superMode = ui.checkBoxSuperMode->isChecked();
+    QThreadPool::globalInstance()->start([&, clicked, superMode]() {
         if (!clicked)
         {
             emit StopScanner();
@@ -275,6 +277,7 @@ void WindowMain::pBtStream(bool clicked)
         else
         {
             t2.setUrl(stream_link, heards);
+            t2.setSuperMode(superMode);
         }
         if (const std::string& type = userinfo["account"][countA]["type"]; type == "官服")
         {
@@ -641,6 +644,7 @@ void WindowMain::pBtStop()
     ui.pBtStream->setChecked(false);
     ui.pBtstartScreen->setEnabled(true);
     ui.pBtStream->setEnabled(true);
+    ui.checkBoxSuperMode->setEnabled(true);
 }
 
 void WindowMain::configInitUpdate()

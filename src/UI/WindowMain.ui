@@ -202,6 +202,22 @@ QTableWidget::item:selected
      <string>直播平台：</string>
     </property>
    </widget>
+   <widget class="QCheckBox" name="checkBoxSuperMode">
+    <property name="geometry">
+     <rect>
+      <x>280</x>
+      <y>345</y>
+      <width>191</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>每 50ms 提交一次直播画面识别，可能显著增加 CPU 占用</string>
+    </property>
+    <property name="text">
+     <string>超级模式（每 50ms 扫描）</string>
+    </property>
+   </widget>
    <widget class="QWidget" name="horizontalLayoutWidget">
     <property name="geometry">
      <rect>
